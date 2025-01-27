@@ -4,13 +4,13 @@ const cors = require('cors');
 
 const app = express();
 
-// Use CORS middleware
-app.use(cors()); // Allow all origins by default
+app.use(cors())
 
 app.get('/proxy-res', async (req, res) => {
   try {
     const queryString = req.originalUrl;
 
+    // Extract the URL parameter from the query string
     const match = queryString.match(/(?<=url=).*$/);
 
     if (!match) {
@@ -18,31 +18,33 @@ app.get('/proxy-res', async (req, res) => {
     }
 
     const encodedUrl = match[0];
-
     const fullUrl = decodeURIComponent(encodedUrl);
 
-    // Validate the URL (optional but recommended)
     const urlPattern = /^https?:\/\//;
     if (!urlPattern.test(fullUrl)) {
       return res.status(400).send('Invalid URL');
     }
 
-    // Stream the content to the client
+    // Make the request and stream the response to the client
     const response = await axios.get(fullUrl, { responseType: 'stream' });
 
-    // Pass headers (like content-type and content-length) from the original response
-    Object.entries(response.headers).forEach(([key, value]) => {
-      res.setHeader(key, value);
-    });
+    res.setHeader('Content-Type', response.headers['content-type'] || 'application/octet-stream');
+    if (response.headers['content-length']) {
+      res.setHeader('Content-Length', response.headers['content-length']);
+    }
 
-    // Add CORS headers explicitly for better control
-    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow all origins
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS'); // Allow specific methods
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
 
+    // Pipe the streamed data from the source to the client
     response.data.pipe(res);
   } catch (err) {
     console.error('Error fetching resource:', err.message);
-    res.status(500).send('Error fetching resource');
+    if (err.response) {
+      res.status(err.response.status).send(err.response.data);
+    } else {
+      res.status(500).send('Error fetching resource');
+    }
   }
 });
 
