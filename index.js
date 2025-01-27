@@ -34,17 +34,12 @@ app.get('/proxy-res', async (req, res) => {
       res.setHeader('Content-Length', response.headers['content-length']);
     }
 
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-
     response.data.pipe(res);
   } catch (err) {
     console.error('Error fetching resource:', err.message);
     if (err.response) {
-      // If the error has a response, return its status code and data
       res.status(err.response.status).send(err.response.data);
     } else {
-      // Generic error message
       res.status(500).send('Error fetching resource');
     }
   }
