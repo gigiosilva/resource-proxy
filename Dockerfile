@@ -1,19 +1,23 @@
-# Build Environment: Node
+# Use Node.js Alpine base image
 FROM node:22.6.0-alpine
 
-# Env
+# Set the working directory
 WORKDIR /app
 
-# Export port 3000 for Node
-EXPOSE 3000
+# Install dependencies for FFmpeg
+RUN apk add --no-cache ffmpeg
 
+# Copy package files for dependency installation
 COPY package*.json ./
 
-# Install Deps
+# Install Node.js dependencies
 RUN yarn install
 
-# Copy the rest of the application files to the container
+# Copy the rest of the application files
 COPY . .
 
-# Run Node index.js file
-CMD [ "node", "index.js" ]
+# Expose port 3000 for the application
+EXPOSE 3000
+
+# Run the Node.js application
+CMD ["node", "index.js"]
