@@ -9,4 +9,4 @@ services:
       - "3000:3000"
     volumes:
       - .:/app
-    command: node index.js
+    command: nodemon index.js

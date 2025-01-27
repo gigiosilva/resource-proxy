@@ -1,16 +1,18 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const compression = require('compression');
 
 const app = express();
 
-app.use(cors())
+app.use(cors());
+
+app.use(compression());
 
 app.get('/proxy-res', async (req, res) => {
   try {
     const queryString = req.originalUrl;
 
-    // Extract the URL parameter from the query string
     const match = queryString.match(/(?<=url=).*$/);
 
     if (!match) {
@@ -25,7 +27,6 @@ app.get('/proxy-res', async (req, res) => {
       return res.status(400).send('Invalid URL');
     }
 
-    // Make the request and stream the response to the client
     const response = await axios.get(fullUrl, { responseType: 'stream' });
 
     res.setHeader('Content-Type', response.headers['content-type'] || 'application/octet-stream');
@@ -36,13 +37,14 @@ app.get('/proxy-res', async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
 
-    // Pipe the streamed data from the source to the client
     response.data.pipe(res);
   } catch (err) {
     console.error('Error fetching resource:', err.message);
     if (err.response) {
+      // If the error has a response, return its status code and data
       res.status(err.response.status).send(err.response.data);
     } else {
+      // Generic error message
       res.status(500).send('Error fetching resource');
     }
   }
